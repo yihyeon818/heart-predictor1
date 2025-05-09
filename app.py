@@ -7,40 +7,38 @@ Original file is located at
     https://colab.research.google.com/drive/1gzc40Fba1zTsOjuNLPm-NmB5xc8HFvu9
 """
 
-pip install streamlit
-
+# app.py
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 # 모델 로드
-# If rf_model.pkl is in a different directory, specify the full path here
-# For example: model = joblib.load("/path/to/your/model/rf_model.pkl")
-model = joblib.load("rf_model.pkl")  # 학습된 모델을 로드합니다.
+model = joblib.load("rf_model.pkl")  # 사전에 학습된 모델 파일
 
 # 앱 제목
 st.title("심장병 예측기")
 
 # CSV 파일 업로드
 uploaded_file = st.file_uploader("CSV 환자 정보 업로드", type="csv")
-if uploaded_file is not None:
-    # 데이터 로드
+if uploaded_file:
+    # 데이터 불러오기
     df = pd.read_csv(uploaded_file)
 
-    # 전처리: 데이터가 모델에 맞는 형태로 전처리해야 할 수 있습니다.
-    # 예시로, 필요한 전처리 작업을 추가하세요.
-    X = df.drop(columns=['target'])
-    X = pd.get_dummies(X, drop_first=True)  # 카테고리 변수 처리
+    # 'target' 컬럼 제거 (예측용 입력 데이터에는 없어야 함)
+    X = df.drop(columns=["target"], errors="ignore")
+
+    # 원-핫 인코딩 (범주형 변수 처리)
+    X = pd.get_dummies(X, drop_first=True)
+
+    # 표준화
     scaler = StandardScaler()
     X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
 
-    # 예측
-    result = model.predict(X_scaled)
+    # 예측 수행
+    prediction = model.predict(X_scaled)
 
-    # 예측 결과 표시
-    st.write("예측 결과:", result)
-
-    # 예측값을 출력하는 추가 코드
-    st.write("예측된 질병 여부 (0: 없음, 1: 있음):", result[0])
+    # 결과 출력
+    st.write("예측 결과:", prediction)
+    for i, pred in enumerate(prediction):
+        st.write(f"환자 {i+1}: {'심장병 있음' if pred == 1 else '심장병 없음'}")
